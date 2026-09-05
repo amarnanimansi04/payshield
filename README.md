@@ -6,6 +6,8 @@ degradation before it impacts merchant revenue.
 Built for the Razorpay AI Buildathon (Track 3 — AI Revenue Recovery). See
 [`PROJECT_BRIEF.md`](./PROJECT_BRIEF.md) for the original design rationale.
 
+![PayShield — healthy state](./docs/screenshots/healthy-state.png)
+
 ---
 
 ## Problem
@@ -167,6 +169,10 @@ only), GitHub Actions (scheduled detection cron)
 Every one of these writes is disclosed, synthetic data (`source =
 "constructed"` in the database) — never real Razorpay traffic, and always
 visibly labeled as such in the UI.
+
+![PayShield — incident detected, with reasoning and autonomous response](./docs/screenshots/incident-detected.png)
+
+![PayShield — evaluation against naive baselines](./docs/screenshots/evaluation.png)
 
 ## Security Considerations
 
