@@ -87,29 +87,7 @@ Audit Trail              — every transition, with reasoning, in plain language
 
 ## Architecture
 
-```
-Razorpay (test mode)
-   │  payment.failed / payment.captured webhook (event-driven, real-time)
-   ▼
-FastAPI backend — webhook ingestion
-   - HMAC signature verification
-   - idempotent write (x-razorpay-event-id primary key, payment_id+outcome secondary)
-   ▼
-Supabase (Postgres via PostgREST) — single source of truth
-   - events / segment_windows / agent_state / agent_state_history /
-     recovery_policy / alerts
-   ▲  (read on a schedule, not per-webhook)
-GitHub Actions — every 5 minutes
-   │  POST /api/cron/detect (secret-protected)
-   ▼
-FastAPI — the detection/decision cycle
-   aggregator → detector → decision_engine → recovery_policy → alert_text → Supabase
-   (an LLM is called in exactly one place, only to write the alert TEXT
-   after a decision is already made — never to make the decision itself)
-   ▲
-Next.js dashboard
-   reads via the backend's own API — never talks to Supabase directly
-```
+![PayShield system architecture](./docs/screenshots/architecture.png)
 
 The frontend (Next.js/React/TypeScript) is a thin client: it has no
 server-side routes or secrets of its own, and calls only the FastAPI
