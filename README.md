@@ -441,18 +441,6 @@ Point the webhook at your **deployed FastAPI backend's** URL:
 localhost — deploy first). Subscribe to `payment.failed` and
 `payment.captured`.
 
-## Deployment instructions
-
-1. **Backend:** push to GitHub, deploy `backend/` to Render (blueprint at
-   `backend/render.yaml`) or any FastAPI-compatible free host. Set every
-   env var from `backend/.env.example` in the host's dashboard.
-2. **Frontend:** deploy the repo root to Vercel; set
-   `NEXT_PUBLIC_API_BASE_URL` to the backend's deployed URL.
-3. **GitHub Actions:** set repo secrets `PAYSHIELD_API_URL` (the backend's
-   URL) and `CRON_SECRET` (matching the backend's value).
-4. Register the Razorpay webhook against the deployed backend URL (see
-   above) — optional; the full demo flow works without it.
-
 ## What PayShield does NOT control
 
 Razorpay's native retry engine, a customer's payment method choice, or
