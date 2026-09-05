@@ -1,0 +1,27 @@
+# PAYSHIELD — Render.com blueprint (free tier, no card required)
+#
+# Deploy: push this repo to GitHub, then on Render dashboard ->
+# New -> Blueprint -> point at this repo. Render reads this file and
+# provisions the service automatically. Set the actual secret values
+# (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RAZORPAY_*, GROQ_API_KEY,
+# CRON_SECRET, ALLOWED_ORIGINS) in the Render dashboard's Environment
+# tab after the first deploy — never commit real secrets here.
+#
+# Free-tier trade-off: the service spins down after ~15 minutes of
+# inactivity and takes a few seconds to cold-start on the next
+# request. This is fine for GitHub Actions' 5-minute cron (it'll just
+# occasionally take a bit longer) and for a live demo where you're
+# actively clicking — just be aware the very first request after an
+# idle period may be slow, and reload once if the dashboard's first
+# load looks empty.
+
+services:
+  - type: web
+    name: payshield-api
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"

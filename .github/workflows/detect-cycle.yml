@@ -1,0 +1,44 @@
+name: PayShield detection cycle
+
+# Runs the scheduled DETECT -> DIAGNOSE -> DECIDE -> ACT -> OBSERVE ->
+# ADAPT cycle by calling the deployed FastAPI backend's endpoint.
+# Deliberately scheduled, not per-webhook — a rolling-window statistic
+# shouldn't recompute on every event. An in-process Python scheduler
+# was deliberately NOT used instead: most free-tier Python hosts spin
+# the process down after inactivity, which would silently kill an
+# in-process scheduler — hitting a public endpoint from GitHub Actions
+# is the more reliable ₹0 pattern regardless of backend language.
+#
+# Requires two repo secrets:
+#   PAYSHIELD_API_URL   - the deployed FastAPI backend's URL, e.g.
+#                       https://payshield-api.onrender.com
+#   CRON_SECRET       - must match the CRON_SECRET env var set on the
+#                       backend host
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # every 5 minutes; tighten to */2 if the
+      # free-tier Actions minute budget allows it during the demo window
+  workflow_dispatch: {} # manual trigger, useful for demo pacing
+
+concurrency:
+  # Prevents a manual workflow_dispatch (demo pacing) from overlapping
+  # with a scheduled run, or two scheduled runs overlapping if one is
+  # delayed — the detection cycle itself is idempotent against
+  # re-evaluating an unchanged canonical window (see
+  # backend/app/services/agent.py's last_window_end guard), but
+  # avoiding concurrent invocations altogether is simpler and cheaper
+  # than relying on that alone.
+  group: payshield-detection-cycle
+  cancel-in-progress: false
+
+jobs:
+  run-detection-cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call detection cycle endpoint
+        run: |
+          curl -sS -X POST "${{ secrets.PAYSHIELD_API_URL }}/api/cron/detect" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body

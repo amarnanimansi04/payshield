@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/*
+  PAYSHIELD design tokens
+  ---------------------
+  Control-room monitoring aesthetic, not a generic SaaS card kit.
+  The signature element is the "flow line" — a calm, smooth sparkline
+  per segment that visibly perturbs when a segment degrades, tying
+  directly back to the product name (PayShield = "flow"). Everything
+  else stays quiet and disciplined around that one bold idea.
+
+  State colors carry meaning consistently everywhere, not decoration:
+    teal   = NORMAL
+    amber  = MONITORING (weak signal, not yet actionable)
+    coral  = ISOLATED_DEGRADATION / SYSTEMIC_DEGRADATION / ESCALATED
+*/
+
+:root {
+  --ink-950: #0a0f1a;
+  --ink-900: #0e1524;
+  --ink-800: #131b2e;
+  --ink-700: #1b2740;
+  --line-700: #24314f;
+  --line-600: #34456b;
+
+  --text-primary: #eaeef7;
+  --text-secondary: #9aa7c2;
+  --text-tertiary: #5f6d8c;
+
+  --flow-teal: #2bb3a3;
+  --flow-teal-dim: #1c7a70;
+  --flow-amber: #d99a35;
+  --flow-amber-dim: #96692a;
+  --flow-coral: #e0503a;
+  --flow-coral-dim: #8f3226;
+
+  --background: var(--ink-950);
+  --foreground: var(--text-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* System stacks — no external font fetch, no demo-day fragility.
+     Display leans on the same grotesk-flavored system faces (Segoe UI /
+     -apple-system) at heavier weight for a distinct, technical feel;
+     tabular numbers get a real monospace stack for genuine alignment,
+     not decoration. */
+  --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: -apple-system, "Segoe UI Semibold", "Segoe UI", Roboto, Helvetica, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-tabular {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline dividers instead of card shadows */
+.hairline {
+  border-color: var(--line-700);
+}
+
+.hairline-strong {
+  border-color: var(--line-600);
+}
+
+/* Premium fintech-console feel: distinct raised panels instead of one
+   flat, divider-separated page. Kept deliberately subtle — a hairline
+   border plus a faint lift, not a heavy drop shadow. */
+.card {
+  background: var(--ink-900);
+  border: 1px solid var(--line-700);
+  border-radius: 0.75rem;
+}
+
+/* A soft, slow pulse around the border of an active-incident card —
+   draws the eye without being garish. Purely presentational; the
+   underlying severity classification is unaffected. */
+.incident-glow {
+  border-color: var(--flow-coral-dim);
+  box-shadow: 0 0 0 1px rgba(224, 80, 58, 0.15), 0 0 24px rgba(224, 80, 58, 0.08);
+}
