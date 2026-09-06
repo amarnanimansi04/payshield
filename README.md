@@ -1,7 +1,8 @@
 # PayShield
 
 An autonomous payment reliability agent that detects systemic payment
-degradation before it impacts merchant revenue.
+degradation and explains why it's happening — so merchants can respond
+before it costs more.
 
 Built for the Razorpay AI Buildathon (Track 3 — AI Revenue Recovery). See
 [`PROJECT_BRIEF.md`](./PROJECT_BRIEF.md) for the original design rationale.
@@ -60,6 +61,63 @@ something's wrong" into "we know what's wrong and we're already
 responding to it." This is a narrow, honest claim: PayShield surfaces the
 pattern and explains it — it doesn't fix the bank's outage, and it
 doesn't claim a specific rupee amount was "saved."
+
+## Why PayShield is an AI agent
+
+"AI" here doesn't mean a model guessing at patterns — it means an
+autonomous loop that watches, reasons, decides, and acts on its own,
+the same shape as any agent:
+
+- **Observe** — every payment event, aggregated per segment against
+  its own recent history.
+- **Diagnose** — a statistical significance test asks whether this
+  segment's current rate is genuinely unusual, not just noisy.
+- **Decide** — a deterministic engine classifies isolated vs. systemic,
+  and whether an incident has actually resolved.
+- **Act** — PayShield adjusts its own recovery-policy workflow
+  (suppress/restore) and writes a merchant-facing alert.
+- **Adapt** — the next cycle re-observes fresh data and decides again —
+  that's how an incident resolves or escalates on its own, not through
+  a separate "resolve" feature.
+
+The detection and classification steps are fully deterministic and
+explainable — the same input always produces the same decision, and
+every decision comes with the actual statistical reasoning behind it,
+not a black-box score. An LLM (Groq) is used in exactly one place:
+writing the merchant-facing alert *sentence* after a decision has
+already been made. It never influences what gets detected, classified,
+or acted on. That's a deliberate choice, not a limitation — in a system
+that's suppressing or restoring payment recovery workflows, the
+decision itself needs to be something you can always explain and
+reproduce, not something an LLM might phrase differently on a retry.
+
+## See PayShield in action (90 seconds)
+
+1. **Healthy** — open the dashboard. Every segment is being watched
+   against its own baseline; nothing's flagged.
+2. **Inject systemic degradation** — one click, clearly labeled
+   synthetic data — simulates two payment segments degrading together.
+3. **Detection** — click "Run detection cycle now." PayShield flags it
+   as systemic, not isolated, in under a second.
+4. **Explanation** — the reasoning panel shows the actual checks it
+   ran: how far off baseline, how many segments, how long it held.
+5. **Recovery** — inject recovery, run the cycle again — the incident
+   resolves on its own, and PayShield's recovery policy restores to
+   active.
+
+Full walkthrough with screenshots below in **Demo Instructions**.
+
+## Live Demo
+
+**[payshield-flax.vercel.app](https://payshield-flax.vercel.app)**
+
+Same disclosed, synthetic demo data described throughout this README —
+never live Razorpay traffic. Two things worth knowing before you click
+around: the backend is on free-tier hosting, so if it's been idle the
+first request can take a few seconds to wake up (reload once if the
+first load looks empty); and if you want a guaranteed-clean run,
+click **"Reset demo"** first rather than stacking multiple scenario
+injections in a row.
 
 ## How it works
 
