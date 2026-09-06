@@ -366,6 +366,12 @@ real-world validation — deterministic seeds via `numpy.random.default_rng`.
 | Groq | Alert-text generation only, on transitions only | Free tier | No |
 | Razorpay test mode | All payment/webhook data | Free by definition | No |
 
+GitHub Actions runs the scheduled detection cycle automatically once
+`PAYSHIELD_API_URL` and `CRON_SECRET` are set as repo secrets after the
+backend is deployed (Settings → Secrets and variables → Actions). Until
+then, the workflow's scheduled run recognizes they're unset and exits
+cleanly rather than failing.
+
 ## Local setup
 
 **Backend:**

@@ -9,11 +9,19 @@ name: PayShield detection cycle
 # in-process scheduler — hitting a public endpoint from GitHub Actions
 # is the more reliable ₹0 pattern regardless of backend language.
 #
-# Requires two repo secrets:
+# Requires two repo secrets, set once the backend is deployed:
 #   PAYSHIELD_API_URL   - the deployed FastAPI backend's URL, e.g.
 #                       https://payshield-api.onrender.com
 #   CRON_SECRET       - must match the CRON_SECRET env var set on the
 #                       backend host
+#
+# Before those secrets exist (e.g. right after this repo is first
+# pushed, before deployment), the scheduled run below deliberately
+# skips the call and exits successfully rather than failing — there is
+# nothing wrong to alert on yet, just a step that isn't configured.
+# Repo Settings -> Secrets and variables -> Actions -> New repository
+# secret is where to add both once the backend is deployed (see
+# README's Local setup / Razorpay webhook setup sections).
 
 on:
   schedule:
@@ -37,8 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call detection cycle endpoint
+        env:
+          PAYSHIELD_API_URL: ${{ secrets.PAYSHIELD_API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -sS -X POST "${{ secrets.PAYSHIELD_API_URL }}/api/cron/detect" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          if [ -z "$PAYSHIELD_API_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Skipping live detection cycle — deployment secrets (PAYSHIELD_API_URL, CRON_SECRET) are not configured yet. This is expected before the backend is deployed."
+            exit 0
+          fi
+          curl -sS -X POST "$PAYSHIELD_API_URL/api/cron/detect" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             --fail-with-body
