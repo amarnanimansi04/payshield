@@ -87,9 +87,9 @@ not a black-box score. An LLM (Groq) is used in exactly one place:
 writing the merchant-facing alert *sentence* after a decision has
 already been made. It never influences what gets detected, classified,
 or acted on. That's a deliberate choice, not a limitation — in a system
-that's suppressing or restoring payment recovery workflows, the
-decision itself needs to be something you can always explain and
-reproduce, not something an LLM might phrase differently on a retry.
+that suppresses or restores payment recovery on its own, the decision
+itself needs to be explainable and reproducible, not something an LLM
+might phrase differently on a retry.
 
 ## See PayShield in action (90 seconds)
 
