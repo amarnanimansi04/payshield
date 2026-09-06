@@ -23,6 +23,7 @@ keeping in the historical record.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -124,29 +125,53 @@ _FETCH_PAGE_SIZE = 1000  # PostgREST's own default max-rows cap - a
 # .range() + .order("created_at") is what actually fetches every row.
 
 
+_FETCH_CONCURRENCY = 4  # pages requested per round-trip round, see below
+
+
+async def _fetch_page(supabase, history_start_iso: str, canonical_end_iso: str, merchant_id: str, offset: int):
+    resp = await (
+        supabase.table("events")
+        .select("*")
+        .eq("merchant_id", merchant_id)
+        .gte("created_at", history_start_iso)
+        .lt("created_at", canonical_end_iso)
+        .order("created_at")
+        .range(offset, offset + _FETCH_PAGE_SIZE - 1)
+        .execute()
+    )
+    return resp.data or []
+
+
 async def _fetch_all_events_in_range(
     supabase, history_start: datetime, canonical_end: datetime, merchant_id: str
 ) -> list[dict]:
+    # Same query, same filters, same order, same final row set as a
+    # plain sequential loop - the only difference is that each ROUND
+    # requests _FETCH_CONCURRENCY pages at once via asyncio.gather
+    # instead of one page per network round-trip. gather() preserves
+    # input order in its results, so pages are still concatenated in
+    # the exact same offset order a sequential loop would produce.
+    # Still fully correct with no known upper bound on row count: a
+    # round only stops once ANY page in it comes back short, exactly
+    # like the single-page version stopping on a short page - it just
+    # does that check _FETCH_CONCURRENCY pages at a time instead of 1.
     history_start_iso = to_iso(history_start)
     canonical_end_iso = to_iso(canonical_end)
     all_rows: list[dict] = []
     offset = 0
     while True:
-        resp = await (
-            supabase.table("events")
-            .select("*")
-            .eq("merchant_id", merchant_id)
-            .gte("created_at", history_start_iso)
-            .lt("created_at", canonical_end_iso)
-            .order("created_at")
-            .range(offset, offset + _FETCH_PAGE_SIZE - 1)
-            .execute()
+        round_offsets = [offset + i * _FETCH_PAGE_SIZE for i in range(_FETCH_CONCURRENCY)]
+        pages = await asyncio.gather(
+            *(
+                _fetch_page(supabase, history_start_iso, canonical_end_iso, merchant_id, o)
+                for o in round_offsets
+            )
         )
-        page = resp.data or []
-        all_rows.extend(page)
-        if len(page) < _FETCH_PAGE_SIZE:
+        for page in pages:
+            all_rows.extend(page)
+        if any(len(page) < _FETCH_PAGE_SIZE for page in pages):
             break
-        offset += _FETCH_PAGE_SIZE
+        offset += _FETCH_CONCURRENCY * _FETCH_PAGE_SIZE
     return all_rows
 
 
