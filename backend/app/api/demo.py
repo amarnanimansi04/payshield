@@ -137,17 +137,32 @@ async def demo_reset(merchant_id: str = Depends(get_current_merchant)) -> JSONRe
         except APIError as e:
             errors.append(f"events: {e.message}")
 
-        for table in DERIVED_TABLES:
-            try:
-                await (
-                    supabase.table(table)
-                    .delete()
-                    .eq("merchant_id", merchant_id)
-                    .neq("segment", "__never_matches__")
-                    .execute()
-                )
-            except APIError as e:
-                errors.append(f"{table}: {e.message}")
+        # The 5 derived tables are fully independent of one another (each
+        # is a separate DELETE on a separate table), so - same pattern as
+        # the demo-scenario insert chunks and the aggregator's page
+        # fetches - they're issued concurrently instead of one
+        # sequential round-trip at a time. return_exceptions=True plus
+        # the explicit handling below preserves the exact original
+        # semantics: an APIError on one table is recorded and every
+        # other table is still attempted; any other exception type
+        # still propagates to the outer handler exactly as it did when
+        # this was a sequential loop.
+        results = await asyncio.gather(
+            *(
+                supabase.table(table)
+                .delete()
+                .eq("merchant_id", merchant_id)
+                .neq("segment", "__never_matches__")
+                .execute()
+                for table in DERIVED_TABLES
+            ),
+            return_exceptions=True,
+        )
+        for table, result in zip(DERIVED_TABLES, results):
+            if isinstance(result, APIError):
+                errors.append(f"{table}: {result.message}")
+            elif isinstance(result, BaseException):
+                raise result
 
         if errors:
             return JSONResponse({"ok": False, "errors": errors}, status_code=500)
